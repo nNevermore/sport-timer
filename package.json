@@ -1,0 +1,57 @@
+{
+  "name": "pro-simple-timer",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A modern, customizable desktop interval timer built with Tauri, React, and TypeScript.",
+  "keywords": [
+    "interval",
+    "pomodoro",
+    "react",
+    "tauri",
+    "timer"
+  ],
+  "license": "MIT",
+  "author": "Bartosz Wójtowicz",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "tauri": "tauri",
+    "build:msix": "node scripts/build-msix.js",
+    "lint:oxlint": "oxlint",
+    "lint:fix": "ultracite fix",
+    "check:types": "tsc --noEmit --pretty",
+    "check:deps": "knip",
+    "check": "ultracite check",
+    "fix": "ultracite fix"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "^2",
+    "@tauri-apps/plugin-opener": "^2",
+    "lucide-react": "^1.18.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "zustand": "^5.0.14"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2",
+    "@types/react": "^19.1.8",
+    "@types/react-dom": "^19.1.6",
+    "@vitejs/plugin-react": "^4.6.0",
+    "knip": "^6.17.1",
+    "oxfmt": "^0.55.0",
+    "oxlint": "^1.70.0",
+    "typescript": "~5.8.3",
+    "ultracite": "^7.8.3",
+    "vite": "^7.0.4"
+  },
+  "knip": {
+    "ignoreDependencies": [
+      "@tauri-apps/plugin-opener"
+    ],
+    "ignoreBinaries": [
+      "winapp"
+    ]
+  }
+}
