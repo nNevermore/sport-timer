@@ -1,6 +1,6 @@
 name: pro-simple-timer
 base: core22
-version: '0.1.0'
+version: '0.1.1'
 summary: Modern, customizable desktop interval timer.
 description: |
   A modern, customizable desktop interval timer built with Tauri, React, and TypeScript.
