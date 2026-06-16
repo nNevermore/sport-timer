@@ -97,3 +97,12 @@ jobs:
         with:
           name: ProSimpleTimer-Snap
           path: ${{ steps.snapcraft.outputs.snap }}
+
+      - name: Publish Snap Package
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        uses: snapcore/action-publish@v1
+        env:
+          SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_STORE_CREDENTIALS }}
+        with:
+          snap: ${{ steps.snapcraft.outputs.snap }}
+          release: stable
