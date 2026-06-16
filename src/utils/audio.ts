@@ -51,7 +51,7 @@ function playBeep(
     try {
       oscillator.disconnect();
       gainNode.disconnect();
-    } catch (e) {
+    } catch {
       // Ignore errors if context was already closed
     }
   }, (duration + 0.1) * 1000);
