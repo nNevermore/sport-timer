@@ -1,0 +1,26 @@
+name: pro-simple-timer
+base: core22
+version: '0.1.0'
+summary: Modern, customizable desktop interval timer.
+description: |
+  A modern, customizable desktop interval timer built with Tauri, React, and TypeScript.
+  Perfect for workouts, Pomodoro, and interval-based tasks.
+grade: stable
+confinement: strict
+
+apps:
+  pro-simple-timer:
+    command: usr/bin/pro-simple-timer
+    desktop: usr/share/applications/pro-simple-timer.desktop
+    extensions: [gnome]
+
+parts:
+  build-app:
+    plugin: dump
+    # We point source to the folder containing our pre-built .deb package
+    source: src-tauri/target/release/bundle/deb/
+    build-packages:
+      - dpkg
+    override-build: |
+      # Extract the pre-built deb package directly into the snap installation directory
+      dpkg -x *.deb $SNAPCRAFT_PART_INSTALL/

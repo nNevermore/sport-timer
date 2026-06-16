@@ -9,13 +9,8 @@ on:
       - main
 
 jobs:
-  build:
-    strategy:
-      fail-fast: false
-      matrix:
-        platform: [windows-latest] # Currently configured only for Windows (MSIX)
-
-    runs-on: ${{ matrix.platform }}
+  build-windows:
+    runs-on: windows-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -54,3 +49,50 @@ jobs:
         with:
           name: ProSimpleTimer-Windows
           path: ProSimpleTimer.msix
+
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: "npm"
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: "src-tauri"
+
+      - name: Build Debian Package
+        run: npm run tauri build -- --bundles deb
+
+      - name: Build Snap Package
+        uses: snapcore/action-build@v2
+        id: snapcraft
+
+      - name: Upload Debian Package
+        uses: actions/upload-artifact@v4
+        with:
+          name: ProSimpleTimer-Debian
+          path: src-tauri/target/release/bundle/deb/*.deb
+
+      - name: Upload Snap Package
+        uses: actions/upload-artifact@v4
+        with:
+          name: ProSimpleTimer-Snap
+          path: ${{ steps.snapcraft.outputs.snap }}
