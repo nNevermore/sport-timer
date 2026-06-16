@@ -24,3 +24,5 @@ parts:
     override-build: |
       # Extract the pre-built deb package directly into the snap installation directory
       dpkg -x *.deb $SNAPCRAFT_PART_INSTALL/
+      # Rename the desktop file to lowercase kebab-case to match snap configuration
+      mv $SNAPCRAFT_PART_INSTALL/usr/share/applications/*.desktop $SNAPCRAFT_PART_INSTALL/usr/share/applications/pro-simple-timer.desktop

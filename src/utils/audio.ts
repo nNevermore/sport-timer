@@ -21,6 +21,8 @@ function playBeep(
 ) {
   if (!audioCtx) {
     initAudio();
+  } else if (audioCtx.state === "suspended") {
+    audioCtx.resume();
   }
   if (!audioCtx) {
     return;
@@ -43,6 +45,16 @@ function playBeep(
 
   oscillator.start();
   oscillator.stop(audioCtx.currentTime + duration);
+
+  // Disconnect nodes after playing to prevent WebKit audio engine leaks
+  setTimeout(() => {
+    try {
+      oscillator.disconnect();
+      gainNode.disconnect();
+    } catch (e) {
+      // Ignore errors if context was already closed
+    }
+  }, (duration + 0.1) * 1000);
 }
 
 interface BeepConfig {
@@ -91,13 +103,21 @@ export function speak(text: string, enabled: boolean, volume = 0.8) {
     return;
   }
 
-  // Cancel any ongoing speech
-  window.speechSynthesis.cancel();
+  try {
+    // On Linux/WebKitGTK, speechSynthesis.cancel() is known to deadlock the media pipeline
+    // due to issues in speech-dispatcher. We bypass cancel() on Linux.
+    const isLinux = navigator.userAgent.toLowerCase().includes("linux");
+    if (!isLinux) {
+      window.speechSynthesis.cancel();
+    }
 
-  const utterance = new SpeechSynthesisUtterance(text);
-  utterance.lang = "en-US";
-  utterance.rate = 1.1; // slightly faster for workouts
-  utterance.volume = volume;
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = "en-US";
+    utterance.rate = 1.1; // slightly faster for workouts
+    utterance.volume = volume;
 
-  window.speechSynthesis.speak(utterance);
+    window.speechSynthesis.speak(utterance);
+  } catch (error) {
+    console.warn("Speech synthesis failed:", error);
+  }
 }
