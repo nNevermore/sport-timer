@@ -27,7 +27,7 @@ try {
   console.log(`Copied ${srcPath} -> ${destPath}`);
 
   console.log("\n=== Step 3: Packaging to MSIX ===");
-  execSync("winapp package .\\staging --output ProSimpleTimer.msix", {
+  execSync("npx winapp package .\\staging --output ProSimpleTimer.msix", {
     stdio: "inherit",
   });
 
