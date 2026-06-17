@@ -31,3 +31,4 @@ src-tauri/gen/schemas/
 staging/*.exe
 *.msix
 *.pfx
+.vercel

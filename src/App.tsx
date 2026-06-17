@@ -15,8 +15,9 @@ import {
   Play,
   Pause,
   Square,
+  SkipForward,
 } from "lucide-react";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 
 import type { Phase } from "./stores/useTimerStore";
 import { useTimerStore } from "./stores/useTimerStore";
@@ -25,6 +26,7 @@ function App() {
   const [configOpen, setConfigOpen] = useState(false);
   const [soundOpen, setSoundOpen] = useState(false);
   const [isMini, setIsMini] = useState(false);
+  
   const {
     settings,
     currentPhase,
@@ -32,12 +34,23 @@ function App() {
     isRunning,
     isPaused,
     nextPhaseText,
+    compiledPhases,
+    currentPhaseIndex,
+    elapsedWaitTime,
     start,
     pause,
     reset,
     tick,
+    nextPhase,
     updateSettings,
   } = useTimerStore();
+
+  const currentExecPhase =
+    currentPhaseIndex >= 0 && currentPhaseIndex < compiledPhases.length
+      ? compiledPhases[currentPhaseIndex]
+      : null;
+
+  const isWait = currentExecPhase?.isWait ?? false;
 
   // Initialize Worker
   useEffect(() => {
@@ -97,6 +110,39 @@ function App() {
     };
   }, [configOpen, soundOpen]);
 
+  // Keyboard controls
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't trigger if user is interacting with inputs
+      if ((e.target as HTMLElement).tagName === "INPUT" || (e.target as HTMLElement).tagName === "SELECT") {
+        return;
+      }
+
+      if (e.key === "Enter") {
+        e.preventDefault();
+        if (!isRunning) start();
+        else if (isWait) nextPhase();
+      } else if (e.key === " ") {
+        e.preventDefault();
+        if (!isRunning) start();
+        else if (isWait) nextPhase();
+        else pause();
+      } else if (e.key === "Escape") {
+        e.preventDefault();
+        if (configOpen || soundOpen) {
+          setConfigOpen(false);
+          setSoundOpen(false);
+        } else if (isMini) {
+          setIsMini(false);
+        } else {
+          reset();
+        }
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isRunning, isWait, start, nextPhase, pause, reset, configOpen, soundOpen, isMini]);
+
   // Disable Context Menu globally
   useEffect(() => {
     const handleContextMenu = (e: MouseEvent) => e.preventDefault();
@@ -117,6 +163,10 @@ function App() {
         if (!active) {
           return;
         }
+        
+        // Safety check for web/mobile environments without Tauri window APIs
+        if (!(window as any).__TAURI_INTERNALS__) return;
+
         const win = getCurrentWindow() as any;
 
         if (isMini) {
@@ -131,7 +181,7 @@ function App() {
           if (monitor) {
             const { scaleFactor } = monitor;
             const miniWidth = 315 * scaleFactor;
-            const miniHeight = 385 * scaleFactor;
+            const miniHeight = 420 * scaleFactor;
             const padding = 30 * scaleFactor;
 
             const targetX =
@@ -145,7 +195,7 @@ function App() {
               new PhysicalPosition(Math.round(targetX), Math.round(targetY))
             );
           } else {
-            await win.setSize(new LogicalSize(315, 385));
+            await win.setSize(new LogicalSize(315, 420));
           }
           await win.setAlwaysOnTop(true);
           await win.setDecorations(false);
@@ -174,7 +224,7 @@ function App() {
 
   // Formatting time
   const formatTime = (ms: number) => {
-    const totalSeconds = Math.ceil(ms / 1000);
+    const totalSeconds = Math.floor(ms / 1000);
     if (totalSeconds < 0) {
       return "00:00";
     }
@@ -205,16 +255,25 @@ function App() {
   };
 
   const currentColor = getColorForPhase(currentPhase);
-  const totalPhaseTime =
-    currentPhase !== "idle"
-      ? (settings[currentPhase as keyof typeof settings] as number) * 1000
-      : 1000;
+  
+  const totalPhaseTime = currentExecPhase && !currentExecPhase.isWait 
+    ? currentExecPhase.durationSec * 1000 
+    : 1000;
 
   // Calculate progress circle offset
   const size = isMini ? 260 : 400;
   const radius = isMini ? 110 : 180;
   const circumference = 2 * Math.PI * radius;
-  const progress = isRunning ? Math.max(0, timeRemaining / totalPhaseTime) : 1;
+  
+  let progress = 1;
+  if (isRunning) {
+    if (isWait) {
+      // For WaitBlock, pulse the ring
+      progress = 1; // Full ring, but we can add css pulse
+    } else {
+      progress = Math.max(0, timeRemaining / totalPhaseTime);
+    }
+  }
   const strokeDashoffset = circumference - progress * circumference;
 
   const bgClass =
@@ -223,6 +282,10 @@ function App() {
       : (currentPhase === "rest"
         ? "breathe-rest"
         : "");
+
+  const cycleText = currentExecPhase?.cycleStack
+    ?.map((c) => `${c.name} ${c.current}/${c.total}`)
+    .join(" • ") || "";
 
   return (
     <div
@@ -237,7 +300,13 @@ function App() {
         ) {
           return;
         }
-        getCurrentWindow().startDragging();
+        
+        // Only allow dragging on desktop environments (where window size makes sense and TAURI is present)
+        if ((window as any).__TAURI_INTERNALS__ && window.innerWidth > 768) {
+          try {
+            getCurrentWindow().startDragging();
+          } catch(e) {}
+        }
       }}
     >
       {/* Sidebar */}
@@ -270,6 +339,20 @@ function App() {
         ref={configPanelRef}
       >
         <h2>Timer Settings</h2>
+        
+        <div className="setting-group">
+          <label>
+            <span>Schema Mode</span>
+          </label>
+          <select
+            value={settings.mode}
+            onChange={(e) => updateSettings({ mode: e.target.value as any })}
+            className="sound-select"
+          >
+            <option value="default">Default</option>
+            <option value="sets">Sets (Serie)</option>
+          </select>
+        </div>
 
         <div className="setting-group">
           <label>
@@ -318,6 +401,58 @@ function App() {
             }
           />
         </div>
+        
+        {settings.mode === "sets" && (
+          <>
+            <div className="setting-group">
+              <label>
+                <span>Sets</span> <span>{settings.sets}</span>
+              </label>
+              <input
+                type="range"
+                min="1"
+                max="20"
+                step="1"
+                value={settings.sets}
+                onChange={(e) =>
+                  updateSettings({ sets: Number.parseInt(e.target.value, 10) })
+                }
+              />
+            </div>
+            
+            <div className="setting-group">
+              <label>
+                <span>Set Rest Type</span>
+              </label>
+              <select
+                value={settings.useWaitBlockForSetRest ? "wait" : "timed"}
+                onChange={(e) => updateSettings({ useWaitBlockForSetRest: e.target.value === "wait" })}
+                className="sound-select"
+              >
+                <option value="timed">Timed (sec)</option>
+                <option value="wait">Wait for Input (WaitBlock)</option>
+              </select>
+            </div>
+            
+            {!settings.useWaitBlockForSetRest && (
+              <div className="setting-group">
+                <label>
+                  <span>Set Rest (sec)</span> <span>{settings.setRest}s</span>
+                </label>
+                <input
+                  type="range"
+                  min="5"
+                  max="600"
+                  step="5"
+                  value={settings.setRest}
+                  onChange={(e) =>
+                    updateSettings({ setRest: Number.parseInt(e.target.value, 10) })
+                  }
+                />
+              </div>
+            )}
+          </>
+        )}
 
         <div className="setting-group">
           <label>
@@ -429,9 +564,6 @@ function App() {
               />
             </label>
           </div>
-          <p style={{ color: "rgba(255,255,255,0.5)", fontSize: "0.8rem" }}>
-            * Custom presets are loaded from device storage.
-          </p>
         </div>
       </div>
 
@@ -445,7 +577,7 @@ function App() {
           {isMini ? <Maximize2 size={18} /> : <Minimize2 size={18} />}
         </button>
         <div className="timer-container">
-          <svg className="progress-ring" width={size} height={size}>
+          <svg className={`progress-ring ${isWait && isRunning && !isPaused ? 'pulse-ring' : ''}`} width={size} height={size}>
             <circle
               className="progress-ring-bg"
               cx={size / 2}
@@ -466,16 +598,23 @@ function App() {
           </svg>
 
           <div className="timer-text-container">
+            <div className="cycle-label">
+              {cycleText || " "}
+            </div>
             <div
               className="phase-label"
               style={{ color: isRunning ? currentColor : "#fff" }}
             >
-              {currentPhase === "idle" ? "PRO SIMPLE TIMER" : currentPhase}
+              {currentPhase === "idle" ? "PRO SIMPLE TIMER" : (currentExecPhase?.name || currentPhase)}
             </div>
+            
             <div className="time-display">
-              {isRunning
-                ? formatTime(timeRemaining)
-                : formatTime(settings.work * 1000)}
+              {!isRunning
+                ? formatTime(settings.work * 1000)
+                : isWait 
+                  ? formatTime(elapsedWaitTime) 
+                  : formatTime(timeRemaining)
+              }
             </div>
             <div className="next-up">
               {isRunning ? nextPhaseText : "Setup your workout"}
@@ -488,6 +627,27 @@ function App() {
             <button className="btn-primary" onClick={start}>
               START
             </button>
+          ) : isWait ? (
+            <div style={{ display: "flex", gap: "20px" }}>
+              <button
+                className="btn-primary pulse-btn"
+                onClick={nextPhase}
+                style={{ padding: "12px 20px" }}
+              >
+                 READY (NEXT)
+              </button>
+              <button
+                className="btn-primary"
+                onClick={reset}
+                style={{
+                  background: "rgba(255,255,255,0.1)",
+                  color: "#fff",
+                  padding: "12px 20px",
+                }}
+              >
+                <Square fill="#fff" />
+              </button>
+            </div>
           ) : (
             <div style={{ display: "flex", gap: "20px" }}>
               <button

@@ -7,15 +7,27 @@ import {
   speak,
 } from "../utils/audio";
 
+import {
+  compileSchema,
+  createDefaultSchema,
+  createSetsSchema,
+  ExecutablePhase,
+} from "./timerSchema";
+
 export type Phase = "warmup" | "work" | "rest" | "cooldown" | "idle";
 
+export type SchemaMode = "default" | "sets" | "custom";
+
 export interface TimerSettings {
+  mode: SchemaMode;
   warmup: number;
   work: number;
   rest: number;
   cycles: number; // e.g. 8 cycles per set
   sets: number;
+  setRest: number;
   cooldown: number;
+  useWaitBlockForSetRest: boolean;
   ttsEnabled: boolean;
   beepsEnabled: boolean;
   volume: number;
@@ -28,11 +40,13 @@ export interface TimerState {
   settings: TimerSettings;
   currentPhase: Phase;
   timeRemaining: number;
-  currentCycle: number;
-  currentSet: number;
   isRunning: boolean;
   isPaused: boolean;
   nextPhaseText: string;
+  
+  compiledPhases: ExecutablePhase[];
+  currentPhaseIndex: number;
+  elapsedWaitTime: number; // For WaitBlocks, counts up
 
   // Actions
   updateSettings: (newSettings: Partial<TimerSettings>) => void;
@@ -40,14 +54,18 @@ export interface TimerState {
   pause: () => void;
   reset: () => void;
   tick: (deltaMs: number) => void;
+  nextPhase: () => void; // Manual skip or proceed for WaitBlock
 }
 
 const defaultSettings: TimerSettings = {
+  mode: "default",
   beepsEnabled: true,
   cooldown: 0,
   cycles: 8,
   rest: 10,
   sets: 1,
+  setRest: 60,
+  useWaitBlockForSetRest: false,
   soundProfile: "retro",
   ttsEnabled: true,
   ttsVolume: 80,
@@ -71,46 +89,87 @@ const loadSavedSettings = (): TimerSettings => {
   return defaultSettings;
 };
 
+const buildPhases = (settings: TimerSettings): ExecutablePhase[] => {
+  let schema;
+  if (settings.mode === "default") {
+    schema = createDefaultSchema(
+      settings.warmup,
+      settings.work,
+      settings.rest,
+      settings.cycles,
+      settings.cooldown
+    );
+  } else if (settings.mode === "sets") {
+    schema = createSetsSchema(
+      settings.warmup,
+      settings.work,
+      settings.rest,
+      settings.cycles,
+      settings.sets,
+      settings.setRest,
+      settings.cooldown,
+      settings.useWaitBlockForSetRest
+    );
+  } else {
+    // Custom mode fallback to default for now
+    schema = createDefaultSchema(
+      settings.warmup,
+      settings.work,
+      settings.rest,
+      settings.cycles,
+      settings.cooldown
+    );
+  }
+  return compileSchema(schema);
+};
+
 export const useTimerStore = create<TimerState>((set, get) => ({
-  currentCycle: 1,
+  settings: loadSavedSettings(),
   currentPhase: "idle",
-  currentSet: 1,
-  isPaused: false,
+  timeRemaining: 0,
   isRunning: false,
+  isPaused: false,
   nextPhaseText: "Ready to start",
-  pause: () => set({ isPaused: true }),
+  compiledPhases: [],
+  currentPhaseIndex: -1,
+  elapsedWaitTime: 0,
+
+  pause: () => set((state) => ({ isPaused: !state.isPaused })),
+  
   reset: () =>
     set({
-      currentCycle: 1,
       currentPhase: "idle",
-      currentSet: 1,
       isPaused: false,
       isRunning: false,
       nextPhaseText: "Ready to start",
       timeRemaining: 0,
+      compiledPhases: [],
+      currentPhaseIndex: -1,
+      elapsedWaitTime: 0,
     }),
-  settings: loadSavedSettings(),
+    
   start: () => {
     const state = get();
     initAudio(); // Initialize audio context on first user interaction
 
     if (state.currentPhase === "idle" || !state.isRunning) {
-      let initialPhase: Phase = "work";
-      let initialTime = state.settings.work;
+      const phases = buildPhases(state.settings);
+      
+      if (phases.length === 0) return;
 
-      if (state.settings.warmup > 0) {
-        initialPhase = "warmup";
-        initialTime = state.settings.warmup;
-      }
+      const firstPhase = phases[0];
+      const nextPhase = phases.length > 1 ? phases[1] : null;
+      const nextText = nextPhase ? `Next: ${nextPhase.name}` : "Workout Complete!";
 
       set({
-        currentCycle: 1,
-        currentPhase: initialPhase,
-        currentSet: 1,
+        compiledPhases: phases,
+        currentPhaseIndex: 0,
+        currentPhase: firstPhase.phaseType,
         isPaused: false,
         isRunning: true,
-        nextPhaseText: initialPhase === "warmup" ? "Next: Work" : "Next: Rest",
-        timeRemaining: initialTime * 1000,
+        nextPhaseText: nextText,
+        timeRemaining: firstPhase.isWait ? 0 : firstPhase.durationSec * 1000,
+        elapsedWaitTime: 0,
       });
 
       if (state.settings.beepsEnabled) {
@@ -120,7 +179,7 @@ export const useTimerStore = create<TimerState>((set, get) => ({
         );
       }
       speak(
-        `${initialPhase} started`,
+        `${firstPhase.name} started`,
         state.settings.ttsEnabled,
         state.settings.ttsVolume / 100
       );
@@ -128,17 +187,73 @@ export const useTimerStore = create<TimerState>((set, get) => ({
       set({ isPaused: false });
     }
   },
+
+  nextPhase: () => {
+    const state = get();
+    if (!state.isRunning) return;
+
+    const { settings, compiledPhases, currentPhaseIndex } = state;
+    const nextIndex = currentPhaseIndex + 1;
+
+    if (nextIndex < compiledPhases.length) {
+      const nextPhase = compiledPhases[nextIndex];
+      const upcomingPhase = nextIndex + 1 < compiledPhases.length ? compiledPhases[nextIndex + 1] : null;
+      const nextText = upcomingPhase ? `Next: ${upcomingPhase.name}` : "Workout Complete!";
+
+      set({
+        currentPhaseIndex: nextIndex,
+        currentPhase: nextPhase.phaseType,
+        nextPhaseText: nextText,
+        timeRemaining: nextPhase.isWait ? 0 : nextPhase.durationSec * 1000,
+        elapsedWaitTime: 0,
+      });
+
+      if (settings.beepsEnabled) {
+        playPhaseStartBeep(settings.volume / 100, settings.soundProfile);
+      }
+      speak(nextPhase.name, settings.ttsEnabled, settings.ttsVolume / 100);
+    } else {
+      // Finished
+      set({
+        currentPhase: "idle",
+        isPaused: false,
+        isRunning: false,
+        nextPhaseText: "Workout Complete!",
+        timeRemaining: 0,
+        currentPhaseIndex: -1,
+        elapsedWaitTime: 0,
+      });
+      speak(
+        "Workout complete. Great job!",
+        settings.ttsEnabled,
+        settings.ttsVolume / 100
+      );
+    }
+  },
+
   tick: (deltaMs) => {
     const state = get();
     if (!state.isRunning || state.isPaused) {
       return;
     }
 
+    const { compiledPhases, currentPhaseIndex } = state;
+    if (currentPhaseIndex >= compiledPhases.length || currentPhaseIndex < 0) return;
+
+    const currentExecPhase = compiledPhases[currentPhaseIndex];
+
+    if (currentExecPhase.isWait) {
+       // Wait block: count up
+       set({ elapsedWaitTime: state.elapsedWaitTime + deltaMs });
+       return;
+    }
+
+    // Normal countdown block
     const oldTimeSec = Math.ceil(state.timeRemaining / 1000);
     const newTime = state.timeRemaining - deltaMs;
     const newTimeSec = Math.ceil(newTime / 1000);
 
-    // Play countdown beeps based on settings (0 to 5 beeps)
+    // Play countdown beeps
     if (
       newTimeSec > 0 &&
       newTimeSec <= state.settings.warningBeeps &&
@@ -153,86 +268,12 @@ export const useTimerStore = create<TimerState>((set, get) => ({
     }
 
     if (newTime <= 0) {
-      const { settings, currentPhase, currentCycle, currentSet } = state;
-
-      let nextPhase: Phase = "idle";
-      let nextTime = 0;
-      let nextCycle = currentCycle;
-      let nextSet = currentSet;
-      let nextText = "";
-
-      if (currentPhase === "warmup") {
-        nextPhase = "work";
-        nextTime = settings.work;
-        nextText = "Next: Rest";
-      } else if (currentPhase === "work") {
-        if (currentCycle < settings.cycles) {
-          nextPhase = "rest";
-          nextTime = settings.rest;
-          nextText = "Next: Work";
-        } else if (currentSet < settings.sets) {
-          nextPhase = "rest";
-          nextTime = settings.rest;
-          nextText = `Next: Set ${currentSet + 1}`;
-        } else if (settings.cooldown > 0) {
-          nextPhase = "cooldown";
-          nextTime = settings.cooldown;
-          nextText = "Almost done!";
-        } else {
-          nextPhase = "idle";
-          nextTime = 0;
-          nextText = "Workout Complete!";
-        }
-      } else if (currentPhase === "rest") {
-        if (currentCycle < settings.cycles) {
-          nextPhase = "work";
-          nextTime = settings.work;
-          nextCycle++;
-          nextText = "Next: Rest";
-        } else if (currentSet < settings.sets) {
-          nextPhase = "work";
-          nextTime = settings.work;
-          nextCycle = 1;
-          nextSet++;
-          nextText = "Next: Rest";
-        }
-      } else if (currentPhase === "cooldown") {
-        nextPhase = "idle";
-        nextTime = 0;
-        nextText = "Workout Complete!";
-      }
-
-      if (nextPhase === "idle") {
-        set({
-          currentPhase: nextPhase,
-          isPaused: false,
-          isRunning: false,
-          nextPhaseText: nextText,
-          timeRemaining: 0,
-        });
-        speak(
-          "Workout complete. Great job!",
-          settings.ttsEnabled,
-          settings.ttsVolume / 100
-        );
-      } else {
-        set({
-          currentCycle: nextCycle,
-          currentPhase: nextPhase,
-          currentSet: nextSet,
-          nextPhaseText: nextText,
-          timeRemaining: nextTime * 1000 + newTime,
-        });
-        if (settings.beepsEnabled) {
-          playPhaseStartBeep(settings.volume / 100, settings.soundProfile);
-        }
-        speak(nextPhase, settings.ttsEnabled, settings.ttsVolume / 100);
-      }
+       state.nextPhase();
     } else {
       set({ timeRemaining: newTime });
     }
   },
-  timeRemaining: 0,
+  
   updateSettings: (newSettings) =>
     set((state) => {
       const updatedSettings = { ...state.settings, ...newSettings };
