@@ -6,17 +6,15 @@ import {
   playCountdownBeep,
   speak,
 } from "../utils/audio";
-
+import type { ExecutablePhase } from "./timerSchema";
 import {
   compileSchema,
   createDefaultSchema,
   createSetsSchema,
-  ExecutablePhase,
 } from "./timerSchema";
+import type { Phase } from "./types";
 
-export type Phase = "warmup" | "work" | "rest" | "cooldown" | "idle";
-
-export type SchemaMode = "default" | "sets" | "custom";
+type SchemaMode = "default" | "sets" | "custom";
 
 export interface TimerSettings {
   mode: SchemaMode;
@@ -43,7 +41,7 @@ export interface TimerState {
   isRunning: boolean;
   isPaused: boolean;
   nextPhaseText: string;
-  
+
   compiledPhases: ExecutablePhase[];
   currentPhaseIndex: number;
   elapsedWaitTime: number; // For WaitBlocks, counts up
@@ -135,7 +133,7 @@ export const useTimerStore = create<TimerState>((set, get) => ({
   elapsedWaitTime: 0,
 
   pause: () => set((state) => ({ isPaused: !state.isPaused })),
-  
+
   reset: () =>
     set({
       currentPhase: "idle",
@@ -147,19 +145,23 @@ export const useTimerStore = create<TimerState>((set, get) => ({
       currentPhaseIndex: -1,
       elapsedWaitTime: 0,
     }),
-    
+
   start: () => {
     const state = get();
     initAudio(); // Initialize audio context on first user interaction
 
     if (state.currentPhase === "idle" || !state.isRunning) {
       const phases = buildPhases(state.settings);
-      
-      if (phases.length === 0) return;
 
-      const firstPhase = phases[0];
+      if (phases.length === 0) {
+        return;
+      }
+
+      const [firstPhase] = phases;
       const nextPhase = phases.length > 1 ? phases[1] : null;
-      const nextText = nextPhase ? `Next: ${nextPhase.name}` : "Workout Complete!";
+      const nextText = nextPhase
+        ? `Next: ${nextPhase.name}`
+        : "Workout Complete!";
 
       set({
         compiledPhases: phases,
@@ -190,15 +192,22 @@ export const useTimerStore = create<TimerState>((set, get) => ({
 
   nextPhase: () => {
     const state = get();
-    if (!state.isRunning) return;
+    if (!state.isRunning) {
+      return;
+    }
 
     const { settings, compiledPhases, currentPhaseIndex } = state;
     const nextIndex = currentPhaseIndex + 1;
 
     if (nextIndex < compiledPhases.length) {
       const nextPhase = compiledPhases[nextIndex];
-      const upcomingPhase = nextIndex + 1 < compiledPhases.length ? compiledPhases[nextIndex + 1] : null;
-      const nextText = upcomingPhase ? `Next: ${upcomingPhase.name}` : "Workout Complete!";
+      const upcomingPhase =
+        nextIndex + 1 < compiledPhases.length
+          ? compiledPhases[nextIndex + 1]
+          : null;
+      const nextText = upcomingPhase
+        ? `Next: ${upcomingPhase.name}`
+        : "Workout Complete!";
 
       set({
         currentPhaseIndex: nextIndex,
@@ -238,14 +247,16 @@ export const useTimerStore = create<TimerState>((set, get) => ({
     }
 
     const { compiledPhases, currentPhaseIndex } = state;
-    if (currentPhaseIndex >= compiledPhases.length || currentPhaseIndex < 0) return;
+    if (currentPhaseIndex >= compiledPhases.length || currentPhaseIndex < 0) {
+      return;
+    }
 
     const currentExecPhase = compiledPhases[currentPhaseIndex];
 
     if (currentExecPhase.isWait) {
-       // Wait block: count up
-       set({ elapsedWaitTime: state.elapsedWaitTime + deltaMs });
-       return;
+      // Wait block: count up
+      set({ elapsedWaitTime: state.elapsedWaitTime + deltaMs });
+      return;
     }
 
     // Normal countdown block
@@ -268,12 +279,12 @@ export const useTimerStore = create<TimerState>((set, get) => ({
     }
 
     if (newTime <= 0) {
-       state.nextPhase();
+      state.nextPhase();
     } else {
       set({ timeRemaining: newTime });
     }
   },
-  
+
   updateSettings: (newSettings) =>
     set((state) => {
       const updatedSettings = { ...state.settings, ...newSettings };

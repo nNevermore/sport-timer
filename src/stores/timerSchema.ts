@@ -1,39 +1,39 @@
-import { Phase } from "./useTimerStore";
+import type { Phase } from "./types";
 
-export type BlockType = "phase" | "loop" | "sequence" | "wait";
+type BlockType = "phase" | "loop" | "sequence" | "wait";
 
-export interface BaseBlock {
+interface BaseBlock {
   id: string;
   type: BlockType;
   name?: string;
 }
 
-export interface PhaseBlock extends BaseBlock {
+interface PhaseBlock extends BaseBlock {
   type: "phase";
   phaseType: Phase;
   durationSec: number;
 }
 
-export interface WaitBlock extends BaseBlock {
+interface WaitBlock extends BaseBlock {
   type: "wait";
   phaseType: Phase; // Usually "rest" or "idle"
   // Wait blocks will count up until user interacts
 }
 
-export interface LoopBlock extends BaseBlock {
+interface LoopBlock extends BaseBlock {
   type: "loop";
   count: number;
   children: TimerBlock[];
 }
 
-export interface SequenceBlock extends BaseBlock {
+interface SequenceBlock extends BaseBlock {
   type: "sequence";
   children: TimerBlock[];
 }
 
 export type TimerBlock = PhaseBlock | WaitBlock | LoopBlock | SequenceBlock;
 
-export interface CycleInfo {
+interface CycleInfo {
   name: string;
   current: number;
   total: number;

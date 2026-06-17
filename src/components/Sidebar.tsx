@@ -1,12 +1,12 @@
 import { Settings, Volume2 } from "lucide-react";
-import { RefObject } from "react";
+import type { RefObject } from "react";
 
 interface SidebarProps {
   configOpen: boolean;
   soundOpen: boolean;
   setConfigOpen: (val: boolean) => void;
   setSoundOpen: (val: boolean) => void;
-  sidebarRef: RefObject<HTMLDivElement>;
+  sidebarRef: RefObject<HTMLDivElement | null>;
 }
 
 export function Sidebar({

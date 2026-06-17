@@ -10,14 +10,13 @@ import "./App.css";
 import { Maximize2, Minimize2 } from "lucide-react";
 import { useEffect, useState, useRef } from "react";
 
-import type { Phase } from "./stores/useTimerStore";
-import { useTimerStore } from "./stores/useTimerStore";
-
-import { TimerDisplay } from "./components/TimerDisplay";
+import { ConfigPanel } from "./components/ConfigPanel";
 import { Controls } from "./components/Controls";
 import { Sidebar } from "./components/Sidebar";
-import { ConfigPanel } from "./components/ConfigPanel";
 import { SoundPanel } from "./components/SoundPanel";
+import { TimerDisplay } from "./components/TimerDisplay";
+import type { Phase } from "./stores/types";
+import { useTimerStore } from "./stores/useTimerStore";
 
 function App() {
   const [configOpen, setConfigOpen] = useState(false);
@@ -119,13 +118,20 @@ function App() {
 
       if (e.key === "Enter") {
         e.preventDefault();
-        if (!isRunning) start();
-        else if (isWait) nextPhase();
+        if (!isRunning) {
+          start();
+        } else if (isWait) {
+          nextPhase();
+        }
       } else if (e.key === " ") {
         e.preventDefault();
-        if (!isRunning) start();
-        else if (isWait) nextPhase();
-        else pause();
+        if (!isRunning) {
+          start();
+        } else if (isWait) {
+          nextPhase();
+        } else {
+          pause();
+        }
       } else if (e.key === "Escape") {
         e.preventDefault();
         if (configOpen || soundOpen) {
@@ -169,8 +175,12 @@ function App() {
     let active = true;
     const updateGeometry = async () => {
       try {
-        if (!active) return;
-        if (!(window as any).__TAURI_INTERNALS__) return;
+        if (!active) {
+          return;
+        }
+        if (!(window as any).__TAURI_INTERNALS__) {
+          return;
+        }
 
         const win = getCurrentWindow() as any;
 
@@ -227,7 +237,9 @@ function App() {
   // Formatting time
   const formatTime = (ms: number) => {
     const totalSeconds = Math.floor(ms / 1000);
-    if (totalSeconds < 0) return "00:00";
+    if (totalSeconds < 0) {
+      return "00:00";
+    }
     const minutes = Math.floor(totalSeconds / 60);
     const seconds = totalSeconds % 60;
     return `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
@@ -235,15 +247,19 @@ function App() {
 
   const getColorForPhase = (phase: Phase) => {
     switch (phase) {
-      case "work":
+      case "work": {
         return "var(--neon-red)";
-      case "rest":
+      }
+      case "rest": {
         return "var(--neon-green)";
+      }
       case "warmup":
-      case "cooldown":
+      case "cooldown": {
         return "var(--neon-blue)";
-      default:
+      }
+      default: {
         return "var(--glass-border)";
+      }
     }
   };
 
@@ -256,9 +272,9 @@ function App() {
   const bgClass =
     currentPhase === "work"
       ? "breathe-work"
-      : currentPhase === "rest"
+      : (currentPhase === "rest"
         ? "breathe-rest"
-        : "";
+        : "");
 
   return (
     <div
@@ -277,7 +293,9 @@ function App() {
         if ((window as any).__TAURI_INTERNALS__ && window.innerWidth > 768) {
           try {
             getCurrentWindow().startDragging();
-          } catch (e) {}
+          } catch (error) {
+            console.warn("Drag error", error);
+          }
         }
       }}
     >

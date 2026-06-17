@@ -1,9 +1,10 @@
-import { RefObject } from "react";
-import { TimerSettings } from "../stores/useTimerStore";
+import type { RefObject } from "react";
+
+import type { TimerSettings } from "../stores/useTimerStore";
 
 interface SoundPanelProps {
   isOpen: boolean;
-  panelRef: RefObject<HTMLDivElement>;
+  panelRef: RefObject<HTMLDivElement | null>;
   settings: TimerSettings;
   updateSettings: (newSettings: Partial<TimerSettings>) => void;
 }

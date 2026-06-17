@@ -1,5 +1,5 @@
-import type { Phase } from "../stores/useTimerStore";
-import { ExecutablePhase } from "../stores/timerSchema";
+import type { ExecutablePhase } from "../stores/timerSchema";
+import type { Phase } from "../stores/types";
 
 interface TimerDisplayProps {
   isMini: boolean;
@@ -39,11 +39,7 @@ export function TimerDisplay({
 
   let progress = 1;
   if (isRunning) {
-    if (isWait) {
-      progress = 1; // Full ring
-    } else {
-      progress = Math.max(0, timeRemaining / totalPhaseTime);
-    }
+    progress = isWait ? 1 : Math.max(0, timeRemaining / totalPhaseTime);
   }
   const strokeDashoffset = circumference - progress * circumference;
 
@@ -94,9 +90,9 @@ export function TimerDisplay({
         <div className="time-display">
           {!isRunning
             ? formatTime(settingsWork * 1000)
-            : isWait
+            : (isWait
               ? formatTime(elapsedWaitTime)
-              : formatTime(timeRemaining)}
+              : formatTime(timeRemaining))}
         </div>
         <div className="next-up">
           {isRunning ? nextPhaseText : "Setup your workout"}

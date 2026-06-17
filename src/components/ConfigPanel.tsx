@@ -1,9 +1,10 @@
-import { RefObject } from "react";
-import { TimerSettings } from "../stores/useTimerStore";
+import type { RefObject } from "react";
+
+import type { TimerSettings } from "../stores/useTimerStore";
 
 interface ConfigPanelProps {
   isOpen: boolean;
-  panelRef: RefObject<HTMLDivElement>;
+  panelRef: RefObject<HTMLDivElement | null>;
   settings: TimerSettings;
   updateSettings: (newSettings: Partial<TimerSettings>) => void;
 }
@@ -105,7 +106,9 @@ export function ConfigPanel({
             <select
               value={settings.useWaitBlockForSetRest ? "wait" : "timed"}
               onChange={(e) =>
-                updateSettings({ useWaitBlockForSetRest: e.target.value === "wait" })
+                updateSettings({
+                  useWaitBlockForSetRest: e.target.value === "wait",
+                })
               }
               className="sound-select"
             >
@@ -126,7 +129,9 @@ export function ConfigPanel({
                 step="5"
                 value={settings.setRest}
                 onChange={(e) =>
-                  updateSettings({ setRest: Number.parseInt(e.target.value, 10) })
+                  updateSettings({
+                    setRest: Number.parseInt(e.target.value, 10),
+                  })
                 }
               />
             </div>

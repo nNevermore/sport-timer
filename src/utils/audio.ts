@@ -47,19 +47,22 @@ function playBeep(
   oscillator.stop(audioCtx.currentTime + duration);
 
   // Disconnect nodes after playing to prevent WebKit audio engine leaks
-  setTimeout(() => {
-    try {
-      oscillator.disconnect();
-      gainNode.disconnect();
-      const isLinux = navigator.userAgent.toLowerCase().includes("linux");
-      if (isLinux && audioCtx) {
-        audioCtx.close();
-        audioCtx = null;
+  setTimeout(
+    () => {
+      try {
+        oscillator.disconnect();
+        gainNode.disconnect();
+        const isLinux = navigator.userAgent.toLowerCase().includes("linux");
+        if (isLinux && audioCtx) {
+          audioCtx.close();
+          audioCtx = null;
+        }
+      } catch {
+        // Ignore errors if context was already closed
       }
-    } catch {
-      // Ignore errors if context was already closed
-    }
-  }, (duration + 0.1) * 1000);
+    },
+    (duration + 0.1) * 1000
+  );
 }
 
 interface BeepConfig {

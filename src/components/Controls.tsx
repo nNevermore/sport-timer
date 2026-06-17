@@ -25,7 +25,7 @@ export function Controls({
         <button className="btn-primary" onClick={start}>
           START
         </button>
-      ) : isWait ? (
+      ) : (isWait ? (
         <div style={{ display: "flex", gap: "20px", alignItems: "center" }}>
           <button
             className="btn-primary pulse-btn"
@@ -57,7 +57,7 @@ export function Controls({
           >
             {isPaused ? <Play fill="#000" /> : <Pause fill="#000" />}
           </button>
-          
+
           <button
             className="btn-primary"
             onClick={nextPhase}
@@ -84,7 +84,7 @@ export function Controls({
             <Square fill="#fff" />
           </button>
         </div>
-      )}
+      ))}
     </div>
   );
 }
