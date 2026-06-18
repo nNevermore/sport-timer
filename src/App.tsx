@@ -332,6 +332,8 @@ function App() {
       <GlobalSettingsModal
         isOpen={globalSettingsOpen}
         onClose={() => setGlobalSettingsOpen(false)}
+        settings={settings}
+        updateSettings={updateSettings}
       />
 
       <SchemaEditorModal

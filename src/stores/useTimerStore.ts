@@ -33,6 +33,7 @@ export interface TimerSettings {
   soundProfiles: Record<Phase, SoundProfile>;
   ttsVolume: number;
   warningBeeps: number;
+  isPremium: boolean;
 }
 
 export interface TimerState {
@@ -77,6 +78,7 @@ const defaultSettings: TimerSettings = {
   warmup: 10,
   work: 20,
   warningBeeps: 3,
+  isPremium: true,
 };
 
 const LOCAL_STORAGE_KEY = "sport_timer_settings";
@@ -85,7 +87,11 @@ const loadSavedSettings = (): TimerSettings => {
   try {
     const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
     if (saved) {
-      return { ...defaultSettings, ...JSON.parse(saved) };
+      const parsed = JSON.parse(saved);
+      if (parsed.isPremium === false) {
+        return { ...defaultSettings, isPremium: false };
+      }
+      return { ...defaultSettings, ...parsed };
     }
   } catch (error) {
     console.error("Failed to load settings from localStorage", error);
@@ -303,10 +309,18 @@ export const useTimerStore = create<TimerState>((set, get) => ({
     set((state) => {
       const updatedSettings = { ...state.settings, ...newSettings };
       try {
-        localStorage.setItem(
-          LOCAL_STORAGE_KEY,
-          JSON.stringify(updatedSettings)
-        );
+        if (updatedSettings.isPremium) {
+          localStorage.setItem(
+            LOCAL_STORAGE_KEY,
+            JSON.stringify(updatedSettings)
+          );
+        } else {
+          // Only save the premium flag so it remains false on next boot
+          localStorage.setItem(
+            LOCAL_STORAGE_KEY,
+            JSON.stringify({ isPremium: false })
+          );
+        }
       } catch (error) {
         console.error("Failed to save settings to localStorage", error);
       }
