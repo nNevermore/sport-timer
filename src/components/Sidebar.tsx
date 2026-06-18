@@ -43,14 +43,7 @@ export function Sidebar({
         <Volume2 size={24} />
       </div>
 
-      <div
-        style={{
-          marginTop: "auto",
-          display: "flex",
-          flexDirection: "column",
-          gap: "20px",
-        }}
-      >
+      <div className="sidebar-bottom-group">
         <div
           className="icon-btn"
           onClick={() => {
