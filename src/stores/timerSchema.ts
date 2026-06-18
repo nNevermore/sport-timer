@@ -188,8 +188,7 @@ export function createSetsSchema(
   cycles: number,
   sets: number,
   setRest: number,
-  cooldown: number,
-  useWaitBlockForSetRest: boolean
+  cooldown: number
 ): TimerBlock {
   const sequence: TimerBlock[] = [];
 
@@ -232,20 +231,13 @@ export function createSetsSchema(
             },
           ],
         },
-        useWaitBlockForSetRest
-          ? {
-              id: "set_rest_wait",
-              type: "wait",
-              phaseType: "rest",
-              name: "Rest (Wait)",
-            }
-          : {
-              id: "set_rest",
-              type: "phase",
-              phaseType: "rest",
-              durationSec: setRest,
-              name: "Set Rest",
-            },
+        {
+          id: "set_rest",
+          type: "phase",
+          phaseType: "rest",
+          durationSec: setRest,
+          name: "Set Rest",
+        },
       ],
     });
   }

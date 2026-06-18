@@ -1,4 +1,4 @@
-import { Settings, Volume2 } from "lucide-react";
+import { Settings2, Volume2, Settings, Layers } from "lucide-react";
 import type { RefObject } from "react";
 
 interface SidebarProps {
@@ -6,6 +6,8 @@ interface SidebarProps {
   soundOpen: boolean;
   setConfigOpen: (val: boolean) => void;
   setSoundOpen: (val: boolean) => void;
+  openGlobalSettings: () => void;
+  openSchemaEditor: () => void;
   sidebarRef: RefObject<HTMLDivElement | null>;
 }
 
@@ -14,6 +16,8 @@ export function Sidebar({
   soundOpen,
   setConfigOpen,
   setSoundOpen,
+  openGlobalSettings,
+  openSchemaEditor,
   sidebarRef,
 }: SidebarProps) {
   return (
@@ -24,9 +28,9 @@ export function Sidebar({
           setConfigOpen(!configOpen);
           setSoundOpen(false);
         }}
-        title="Timer Settings"
+        title="Timer Setup"
       >
-        <Settings size={24} />
+        <Settings2 size={24} />
       </div>
       <div
         className={`icon-btn ${soundOpen ? "active" : ""}`}
@@ -37,6 +41,38 @@ export function Sidebar({
         title="Sound Settings"
       >
         <Volume2 size={24} />
+      </div>
+
+      <div
+        style={{
+          marginTop: "auto",
+          display: "flex",
+          flexDirection: "column",
+          gap: "20px",
+        }}
+      >
+        <div
+          className="icon-btn"
+          onClick={() => {
+            setConfigOpen(false);
+            setSoundOpen(false);
+            openSchemaEditor();
+          }}
+          title="Schema Editor"
+        >
+          <Layers size={24} />
+        </div>
+        <div
+          className="icon-btn"
+          onClick={() => {
+            setConfigOpen(false);
+            setSoundOpen(false);
+            openGlobalSettings();
+          }}
+          title="Global Settings"
+        >
+          <Settings size={24} />
+        </div>
       </div>
     </div>
   );

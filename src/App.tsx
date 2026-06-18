@@ -12,6 +12,8 @@ import { useEffect, useState, useRef } from "react";
 
 import { ConfigPanel } from "./components/ConfigPanel";
 import { Controls } from "./components/Controls";
+import { GlobalSettingsModal } from "./components/GlobalSettingsModal";
+import { SchemaEditorModal } from "./components/SchemaEditorModal";
 import { Sidebar } from "./components/Sidebar";
 import { SoundPanel } from "./components/SoundPanel";
 import { TimerDisplay } from "./components/TimerDisplay";
@@ -21,6 +23,8 @@ import { useTimerStore } from "./stores/useTimerStore";
 function App() {
   const [configOpen, setConfigOpen] = useState(false);
   const [soundOpen, setSoundOpen] = useState(false);
+  const [globalSettingsOpen, setGlobalSettingsOpen] = useState(false);
+  const [schemaEditorOpen, setSchemaEditorOpen] = useState(false);
   const [isMini, setIsMini] = useState(false);
 
   const {
@@ -106,6 +110,20 @@ function App() {
     };
   }, [configOpen, soundOpen]);
 
+  const openGlobalSettings = () => {
+    if (isRunning && !isPaused) {
+      pause();
+    }
+    setGlobalSettingsOpen(true);
+  };
+
+  const openSchemaEditor = () => {
+    if (isRunning && !isPaused) {
+      pause();
+    }
+    setSchemaEditorOpen(true);
+  };
+
   // Keyboard controls
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -134,7 +152,11 @@ function App() {
         }
       } else if (e.key === "Escape") {
         e.preventDefault();
-        if (configOpen || soundOpen) {
+        if (globalSettingsOpen) {
+          setGlobalSettingsOpen(false);
+        } else if (schemaEditorOpen) {
+          setSchemaEditorOpen(false);
+        } else if (configOpen || soundOpen) {
           setConfigOpen(false);
           setSoundOpen(false);
         } else if (isMini) {
@@ -155,6 +177,8 @@ function App() {
     reset,
     configOpen,
     soundOpen,
+    globalSettingsOpen,
+    schemaEditorOpen,
     isMini,
   ]);
 
@@ -286,6 +310,8 @@ function App() {
         soundOpen={soundOpen}
         setConfigOpen={setConfigOpen}
         setSoundOpen={setSoundOpen}
+        openGlobalSettings={openGlobalSettings}
+        openSchemaEditor={openSchemaEditor}
         sidebarRef={sidebarRef}
       />
 
@@ -301,6 +327,16 @@ function App() {
         panelRef={soundPanelRef}
         settings={settings}
         updateSettings={updateSettings}
+      />
+
+      <GlobalSettingsModal
+        isOpen={globalSettingsOpen}
+        onClose={() => setGlobalSettingsOpen(false)}
+      />
+
+      <SchemaEditorModal
+        isOpen={schemaEditorOpen}
+        onClose={() => setSchemaEditorOpen(false)}
       />
 
       <div className="main-content">

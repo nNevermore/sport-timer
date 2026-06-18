@@ -101,41 +101,21 @@ export function ConfigPanel({
 
           <div className="setting-group">
             <label>
-              <span>Set Rest Type</span>
+              <span>Set Rest (sec)</span> <span>{settings.setRest}s</span>
             </label>
-            <select
-              value={settings.useWaitBlockForSetRest ? "wait" : "timed"}
+            <input
+              type="range"
+              min="5"
+              max="600"
+              step="5"
+              value={settings.setRest}
               onChange={(e) =>
                 updateSettings({
-                  useWaitBlockForSetRest: e.target.value === "wait",
+                  setRest: Number.parseInt(e.target.value, 10),
                 })
               }
-              className="sound-select"
-            >
-              <option value="timed">Timed (sec)</option>
-              <option value="wait">Wait for Input (WaitBlock)</option>
-            </select>
+            />
           </div>
-
-          {!settings.useWaitBlockForSetRest && (
-            <div className="setting-group">
-              <label>
-                <span>Set Rest (sec)</span> <span>{settings.setRest}s</span>
-              </label>
-              <input
-                type="range"
-                min="5"
-                max="600"
-                step="5"
-                value={settings.setRest}
-                onChange={(e) =>
-                  updateSettings({
-                    setRest: Number.parseInt(e.target.value, 10),
-                  })
-                }
-              />
-            </div>
-          )}
         </>
       )}
 

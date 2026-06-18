@@ -25,7 +25,6 @@ export interface TimerSettings {
   sets: number;
   setRest: number;
   cooldown: number;
-  useWaitBlockForSetRest: boolean;
   ttsEnabled: boolean;
   beepsEnabled: boolean;
   volume: number;
@@ -63,7 +62,6 @@ const defaultSettings: TimerSettings = {
   rest: 10,
   sets: 1,
   setRest: 60,
-  useWaitBlockForSetRest: false,
   soundProfile: "retro",
   ttsEnabled: true,
   ttsVolume: 80,
@@ -105,8 +103,7 @@ const buildPhases = (settings: TimerSettings): ExecutablePhase[] => {
       settings.cycles,
       settings.sets,
       settings.setRest,
-      settings.cooldown,
-      settings.useWaitBlockForSetRest
+      settings.cooldown
     );
   } else {
     // Custom mode fallback to default for now
