@@ -16,6 +16,8 @@ import type { Phase } from "./types";
 
 type SchemaMode = "default" | "sets" | "custom";
 
+export type SoundProfile = "retro" | "soft" | "digital";
+
 export interface TimerSettings {
   mode: SchemaMode;
   warmup: number;
@@ -28,7 +30,7 @@ export interface TimerSettings {
   ttsEnabled: boolean;
   beepsEnabled: boolean;
   volume: number;
-  soundProfile: "retro" | "soft" | "digital";
+  soundProfiles: Record<Phase, SoundProfile>;
   ttsVolume: number;
   warningBeeps: number;
 }
@@ -62,7 +64,13 @@ const defaultSettings: TimerSettings = {
   rest: 10,
   sets: 1,
   setRest: 60,
-  soundProfile: "retro",
+  soundProfiles: {
+    work: "digital",
+    rest: "soft",
+    warmup: "retro",
+    cooldown: "soft",
+    idle: "retro",
+  },
   ttsEnabled: true,
   ttsVolume: 80,
   volume: 80,
@@ -174,7 +182,7 @@ export const useTimerStore = create<TimerState>((set, get) => ({
       if (state.settings.beepsEnabled) {
         playPhaseStartBeep(
           state.settings.volume / 100,
-          state.settings.soundProfile
+          state.settings.soundProfiles[firstPhase.phaseType]
         );
       }
       speak(
@@ -215,7 +223,10 @@ export const useTimerStore = create<TimerState>((set, get) => ({
       });
 
       if (settings.beepsEnabled) {
-        playPhaseStartBeep(settings.volume / 100, settings.soundProfile);
+        playPhaseStartBeep(
+          settings.volume / 100,
+          settings.soundProfiles[nextPhase.phaseType]
+        );
       }
       speak(nextPhase.name, settings.ttsEnabled, settings.ttsVolume / 100);
     } else {
@@ -268,10 +279,16 @@ export const useTimerStore = create<TimerState>((set, get) => ({
       newTimeSec < oldTimeSec
     ) {
       if (state.settings.beepsEnabled) {
-        playCountdownBeep(
-          state.settings.volume / 100,
-          state.settings.soundProfile
-        );
+        const nextIndex = state.currentPhaseIndex + 1;
+        const upcomingPhase =
+          nextIndex < state.compiledPhases.length
+            ? state.compiledPhases[nextIndex]
+            : null;
+        const beepProfile = upcomingPhase
+          ? state.settings.soundProfiles[upcomingPhase.phaseType]
+          : state.settings.soundProfiles[state.currentPhase];
+
+        playCountdownBeep(state.settings.volume / 100, beepProfile);
       }
     }
 
