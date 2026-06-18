@@ -245,7 +245,7 @@ body {
 
 .setting-group input[type="range"] {
   width: 100%;
-  accent-color: var(--neon-red);
+  accent-color: #fff;
 }
 
 .setting-group input[type="checkbox"] {

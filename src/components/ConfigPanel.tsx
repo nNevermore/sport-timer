@@ -35,6 +35,23 @@ export function ConfigPanel({
 
       <div className="setting-group">
         <label>
+          <span>Warmup (sec)</span> <span>{settings.warmup}s</span>
+        </label>
+        <input
+          type="range"
+          min="0"
+          max="120"
+          step="1"
+          value={settings.warmup}
+          onChange={(e) =>
+            updateSettings({ warmup: Number.parseInt(e.target.value, 10) })
+          }
+          style={{ accentColor: "var(--neon-blue)" }}
+        />
+      </div>
+
+      <div className="setting-group">
+        <label>
           <span>Work (sec)</span> <span>{settings.work}s</span>
         </label>
         <input
@@ -46,6 +63,7 @@ export function ConfigPanel({
           onChange={(e) =>
             updateSettings({ work: Number.parseInt(e.target.value, 10) })
           }
+          style={{ accentColor: "var(--neon-red)" }}
         />
       </div>
 
@@ -62,6 +80,7 @@ export function ConfigPanel({
           onChange={(e) =>
             updateSettings({ rest: Number.parseInt(e.target.value, 10) })
           }
+          style={{ accentColor: "var(--neon-green)" }}
         />
       </div>
 
@@ -114,26 +133,11 @@ export function ConfigPanel({
                   setRest: Number.parseInt(e.target.value, 10),
                 })
               }
+              style={{ accentColor: "var(--neon-green)" }}
             />
           </div>
         </>
       )}
-
-      <div className="setting-group">
-        <label>
-          <span>Warmup (sec)</span> <span>{settings.warmup}s</span>
-        </label>
-        <input
-          type="range"
-          min="0"
-          max="120"
-          step="1"
-          value={settings.warmup}
-          onChange={(e) =>
-            updateSettings({ warmup: Number.parseInt(e.target.value, 10) })
-          }
-        />
-      </div>
 
       <div style={{ marginTop: "auto" }}>
         <p style={{ color: "rgba(255,255,255,0.5)", fontSize: "0.8rem" }}>
