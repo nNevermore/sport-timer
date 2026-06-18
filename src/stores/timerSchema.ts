@@ -93,7 +93,30 @@ export function compileSchema(root: TimerBlock): ExecutablePhase[] {
   }
 
   traverse(root, []);
-  return result;
+
+  // Post-processing: remove redundant rests
+  // A rest is redundant if it's the very last phase, or immediately followed by another rest or a cooldown.
+  const cleaned: ExecutablePhase[] = [];
+  for (let i = 0; i < result.length; i++) {
+    const current = result[i];
+
+    if (current.phaseType === "rest") {
+      const next = i + 1 < result.length ? result[i + 1] : null;
+      if (
+        !next ||
+        next.phaseType === "rest" ||
+        next.phaseType === "cooldown" ||
+        next.phaseType === "idle"
+      ) {
+        // Redundant rest, skip it
+        continue;
+      }
+    }
+
+    cleaned.push(current);
+  }
+
+  return cleaned;
 }
 
 // Preset Builders
