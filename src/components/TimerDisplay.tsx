@@ -48,6 +48,15 @@ export function TimerDisplay({
       ?.map((c) => `${c.name} ${c.current}/${c.total}`)
       .join(" • ") || "";
 
+  let displayTime = 0;
+  if (!isRunning) {
+    displayTime = settingsWork * 1000;
+  } else if (isWait) {
+    displayTime = elapsedWaitTime;
+  } else {
+    displayTime = timeRemaining;
+  }
+
   return (
     <div className="timer-container">
       <svg
@@ -87,13 +96,7 @@ export function TimerDisplay({
             : currentExecPhase?.name || currentPhase}
         </div>
 
-        <div className="time-display">
-          {!isRunning
-            ? formatTime(settingsWork * 1000)
-            : (isWait
-              ? formatTime(elapsedWaitTime)
-              : formatTime(timeRemaining))}
-        </div>
+        <div className="time-display">{formatTime(displayTime)}</div>
         <div className="next-up">
           {isRunning ? nextPhaseText : "Setup your workout"}
         </div>

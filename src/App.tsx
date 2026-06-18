@@ -293,12 +293,12 @@ function App() {
       ? currentExecPhase.durationSec * 1000
       : 1000;
 
-  const bgClass =
-    currentPhase === "work"
-      ? "breathe-work"
-      : (currentPhase === "rest"
-        ? "breathe-rest"
-        : "");
+  let bgClass = "";
+  if (currentPhase === "work") {
+    bgClass = "breathe-work";
+  } else if (currentPhase === "rest") {
+    bgClass = "breathe-rest";
+  }
 
   return (
     <div

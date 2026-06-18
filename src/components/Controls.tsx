@@ -19,13 +19,19 @@ export function Controls({
   reset,
   nextPhase,
 }: ControlsProps) {
-  return (
-    <div className="start-overlay">
-      {!isRunning ? (
+  if (!isRunning) {
+    return (
+      <div className="controls">
         <button className="btn-primary" onClick={start}>
           START
         </button>
-      ) : (isWait ? (
+      </div>
+    );
+  }
+
+  if (isWait) {
+    return (
+      <div className="controls">
         <div style={{ display: "flex", gap: "20px", alignItems: "center" }}>
           <button
             className="btn-primary pulse-btn"
@@ -47,44 +53,48 @@ export function Controls({
             <Square fill="#fff" />
           </button>
         </div>
-      ) : (
-        <div style={{ display: "flex", gap: "20px", alignItems: "center" }}>
-          <button
-            className="btn-primary"
-            onClick={isPaused ? start : pause}
-            style={{ padding: "12px 20px" }}
-            title={isPaused ? "Resume" : "Pause"}
-          >
-            {isPaused ? <Play fill="#000" /> : <Pause fill="#000" />}
-          </button>
+      </div>
+    );
+  }
 
-          <button
-            className="btn-primary"
-            onClick={nextPhase}
-            style={{
-              background: "rgba(255,255,255,0.8)",
-              color: "#000",
-              padding: "12px 20px",
-            }}
-            title="Skip to Next Phase"
-          >
-            <SkipForward fill="#000" />
-          </button>
+  return (
+    <div className="controls">
+      <div style={{ display: "flex", gap: "20px", alignItems: "center" }}>
+        <button
+          className="btn-primary"
+          onClick={isPaused ? start : pause}
+          style={{ padding: "12px 20px" }}
+          title={isPaused ? "Resume" : "Pause"}
+        >
+          {isPaused ? <Play fill="#000" /> : <Pause fill="#000" />}
+        </button>
 
-          <button
-            className="btn-primary"
-            onClick={reset}
-            style={{
-              background: "rgba(255,255,255,0.1)",
-              color: "#fff",
-              padding: "12px 20px",
-            }}
-            title="Stop Timer"
-          >
-            <Square fill="#fff" />
-          </button>
-        </div>
-      ))}
+        <button
+          className="btn-primary"
+          onClick={nextPhase}
+          style={{
+            background: "rgba(255,255,255,0.8)",
+            color: "#000",
+            padding: "12px 20px",
+          }}
+          title="Skip to Next Phase"
+        >
+          <SkipForward fill="#000" />
+        </button>
+
+        <button
+          className="btn-primary"
+          onClick={reset}
+          style={{
+            background: "rgba(255,255,255,0.1)",
+            color: "#fff",
+            padding: "12px 20px",
+          }}
+          title="Stop Timer"
+        >
+          <Square fill="#fff" />
+        </button>
+      </div>
     </div>
   );
 }
