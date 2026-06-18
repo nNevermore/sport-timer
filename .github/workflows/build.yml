@@ -9,8 +9,8 @@ on:
       - main
 
 jobs:
-  build-windows:
-    runs-on: windows-latest
+  lint:
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -30,6 +30,22 @@ jobs:
           npx ultracite check
           npm run check:types
           npm run check:deps
+
+  build-windows:
+    needs: lint
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
@@ -51,6 +67,7 @@ jobs:
           path: ProSimpleTimer.msix
 
   build-linux:
+    needs: lint
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout repository

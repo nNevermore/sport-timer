@@ -24,7 +24,9 @@
     "check:types": "tsc --noEmit --pretty",
     "check:deps": "knip",
     "check": "ultracite check",
-    "fix": "ultracite fix"
+    "fix": "ultracite fix",
+    "check-all": "npm run fix && npm run check && npm run lint:oxlint && npm run check:types && npm run check:deps",
+    "publish-git": "npm run check-all && bash bump-version.sh && git add . && git commit -m \"chore: bump version\" && git push"
   },
   "dependencies": {
     "@tauri-apps/api": "^2",

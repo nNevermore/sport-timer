@@ -16,7 +16,7 @@ import type { Phase } from "./types";
 
 type SchemaMode = "default" | "sets" | "custom";
 
-export type SoundProfile = "retro" | "soft" | "digital";
+type SoundProfile = "retro" | "soft" | "digital";
 
 export interface TimerSettings {
   mode: SchemaMode;
